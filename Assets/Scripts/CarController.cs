@@ -13,52 +13,76 @@ public class CarController : MonoBehaviour
         public bool steering;
     }
 
-    public List<AxieInfo> axieInfos;
-    public float maxMotorTorque;
-    public float maxSteeringAngle;
+    [SerializeField] List<AxieInfo> axieInfos;
+    [SerializeField] float maxMotorTorque;
+    [SerializeField] float maxSteeringAngle;
+    private Rigidbody carRB;
+    [SerializeField] Vector3 cOM;
+    [SerializeField] float brakePower;
+    [SerializeField] float brakeInput;
+    
 
-    void wheelPosition(WheelCollider collider)
+    private void Start()
     {
-        if(collider.transform.childCount == 0)
+        carRB = GetComponent<Rigidbody>();
+        carRB.centerOfMass = cOM;
+    }
+
+    public void FixedUpdate()
+    {
+        
+        CarConduction();
+    }
+
+    void WheelPosition(WheelCollider collider)
+    {
+        if (collider.transform.childCount == 0)
         {
             return;
         }
 
         Transform visualWheel = collider.transform.GetChild(0);
 
-        Vector3 positionWheel;
-        Quaternion rotationWheel;
-        collider.GetWorldPose(out positionWheel, out rotationWheel);
-
-        visualWheel.transform.position = positionWheel;
-        visualWheel.transform.rotation = rotationWheel;
+        collider.GetWorldPose(out Vector3 positionWheel, out Quaternion rotationWheel);
+        visualWheel.transform.SetPositionAndRotation(positionWheel, rotationWheel);
 
     }
 
-
-    public void FixedUpdate()
+    private void CarConduction()
     {
         float motor = maxMotorTorque * Input.GetAxis("Vertical");
         float steering = maxSteeringAngle * Input.GetAxis("Horizontal");
-
-        foreach(AxieInfo axieInfo in axieInfos)
+        
+        foreach (AxieInfo axieInfo in axieInfos)
         {
             if (axieInfo.steering)
             {
                 axieInfo.leftWheel.steerAngle = steering;
                 axieInfo.rigthWheel.steerAngle = steering;
-
             }
             if (axieInfo.motor)
             {
                 axieInfo.leftWheel.motorTorque = motor;
                 axieInfo.rigthWheel.motorTorque = motor;
-
             }
 
-            wheelPosition(axieInfo.rigthWheel);
-            wheelPosition(axieInfo.leftWheel);
-
+            WheelPosition(axieInfo.rigthWheel);
+            WheelPosition(axieInfo.leftWheel);
+            BrakesSystem(axieInfo.rigthWheel, axieInfo.leftWheel);
         }
+    }
+
+    private void BrakesSystem( WheelCollider RWheel, WheelCollider Lwheel)
+    {
+        if (Input.GetKey(KeyCode.Space))
+        {
+            brakeInput = 1;
+
+        } else
+        {
+            brakeInput = 0;
+        }
+        RWheel.brakeTorque = brakeInput * brakePower *  0.7f;
+        Lwheel.brakeTorque = brakeInput * brakePower * 0.7f;
     }
 }
