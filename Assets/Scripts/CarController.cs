@@ -11,6 +11,7 @@ public class CarController : MonoBehaviour
         public WheelCollider rigthWheel;
         public bool motor;
         public bool steering;
+        public bool brake;
     }
 
     [SerializeField] List<AxieInfo> axieInfos;
@@ -20,6 +21,7 @@ public class CarController : MonoBehaviour
     [SerializeField] Vector3 cOM;
     [SerializeField] float brakePower;
     [SerializeField] float brakeInput;
+    [SerializeField] bool isBraking;
     
 
     private void Start()
@@ -50,7 +52,8 @@ public class CarController : MonoBehaviour
 
     private void CarConduction()
     {
-        float motor = maxMotorTorque * Input.GetAxis("Vertical");
+        float motorInput = Input.GetAxis("Vertical");
+        float motor = maxMotorTorque * motorInput;
         float steering = maxSteeringAngle * Input.GetAxis("Horizontal");
         
         foreach (AxieInfo axieInfo in axieInfos)
@@ -65,24 +68,35 @@ public class CarController : MonoBehaviour
                 axieInfo.leftWheel.motorTorque = motor;
                 axieInfo.rigthWheel.motorTorque = motor;
             }
+            if (axieInfo.brake)
+            {
+                BrakesSystem(axieInfo.rigthWheel, axieInfo.leftWheel);
+            
+            }
 
             WheelPosition(axieInfo.rigthWheel);
             WheelPosition(axieInfo.leftWheel);
-            BrakesSystem(axieInfo.rigthWheel, axieInfo.leftWheel);
         }
     }
 
-    private void BrakesSystem( WheelCollider RWheel, WheelCollider Lwheel)
+    private void BrakesSystem(WheelCollider RWheel, WheelCollider Lwheel)
     {
         if (Input.GetKey(KeyCode.Space))
         {
             brakeInput = 1;
+            isBraking = true;
+            
 
         } else
         {
             brakeInput = 0;
+            isBraking = false;
         }
         RWheel.brakeTorque = brakeInput * brakePower *  0.7f;
         Lwheel.brakeTorque = brakeInput * brakePower * 0.7f;
+
+
+        
+
     }
 }
