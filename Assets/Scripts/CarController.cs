@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using TMPro;
 
 public class CarController : MonoBehaviour
 {
@@ -21,7 +22,8 @@ public class CarController : MonoBehaviour
     [SerializeField] Vector3 cOM;
     [SerializeField] float brakePower;
     [SerializeField] float brakeInput;
-    [SerializeField] bool isBraking;
+    [SerializeField] TextMeshProUGUI speedometerText;
+    [SerializeField] float speed;
     
 
     private void Start()
@@ -34,6 +36,7 @@ public class CarController : MonoBehaviour
     {
         
         CarConduction();
+        CalculateSpeed();
     }
 
     void WheelPosition(WheelCollider collider)
@@ -84,13 +87,11 @@ public class CarController : MonoBehaviour
         if (Input.GetKey(KeyCode.Space))
         {
             brakeInput = 1;
-            isBraking = true;
             
 
         } else
         {
             brakeInput = 0;
-            isBraking = false;
         }
         RWheel.brakeTorque = brakeInput * brakePower *  0.7f;
         Lwheel.brakeTorque = brakeInput * brakePower * 0.7f;
@@ -98,5 +99,11 @@ public class CarController : MonoBehaviour
 
         
 
+    }
+
+    private void CalculateSpeed()
+    {
+        speed = Mathf.Round(carRB.velocity.magnitude * 3.6f);
+        speedometerText.SetText(speed + " km/h");
     }
 }
