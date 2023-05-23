@@ -16,15 +16,34 @@ public class CarController : MonoBehaviour
     }
 
     [SerializeField] List<AxieInfo> axieInfos;
-    [SerializeField] float maxMotorTorque;
+    [SerializeField] float motorPower;
     [SerializeField] float maxSteeringAngle;
     private Rigidbody carRB;
     [SerializeField] Vector3 cOM;
     [SerializeField] float brakePower;
     [SerializeField] float brakeInput;
-    [SerializeField] TextMeshProUGUI speedometerText;
     [SerializeField] float speed;
-    
+
+    [SerializeField] TextMeshProUGUI speedometerText;
+
+    //RPM variables
+    [SerializeField] float RPM;
+    [SerializeField] float redLine;
+    [SerializeField] float idleRPM;
+    [SerializeField] TextMeshProUGUI rpmText;
+    [SerializeField] TextMeshProUGUI gearText;
+    // [SerializeField] Transform rpmNeedle;
+    // [SerializeField] float minNeedleRotation; //Una vez que arme el velocimetro, ver en la rotacion donde empieza y donde termina, y ahi configurar estos valores
+    // [SerializeField] float maxNeedleRotation;
+    [SerializeField] int currentGear;
+
+    [SerializeField] float[] gearRatios;
+    [SerializeField] float diferentialRatio;
+    [SerializeField] float currentTorque;
+    [SerializeField] float clutch;
+    [SerializeField] float wheelRPM;
+    [SerializeField] AnimationCurve hpToRPMCurve;
+
 
     private void Start()
     {
@@ -36,7 +55,7 @@ public class CarController : MonoBehaviour
     {
         
         CarConduction();
-        CalculateSpeed();
+        CalculateSpeedAndRPM();
     }
 
     void WheelPosition(WheelCollider collider)
@@ -56,8 +75,10 @@ public class CarController : MonoBehaviour
     private void CarConduction()
     {
         float motorInput = Input.GetAxis("Vertical");
-        float motor = maxMotorTorque * motorInput;
-        float steering = maxSteeringAngle * Input.GetAxis("Horizontal");
+        float steeringInput = Input.GetAxis("Horizontal");
+        clutch = Input.GetKey(KeyCode.LeftShift) ? 0 : Mathf.Lerp(clutch, 1, Time.deltaTime);
+        
+        float steering = maxSteeringAngle * steeringInput;
         
         foreach (AxieInfo axieInfo in axieInfos)
         {
@@ -68,8 +89,9 @@ public class CarController : MonoBehaviour
             }
             if (axieInfo.motor)
             {
-                axieInfo.leftWheel.motorTorque = motor;
-                axieInfo.rigthWheel.motorTorque = motor;
+                currentTorque = CalculateTorque(motorInput, axieInfo.rigthWheel, axieInfo.leftWheel);
+                axieInfo.leftWheel.motorTorque = currentTorque * motorInput;
+                axieInfo.rigthWheel.motorTorque = currentTorque * motorInput;
             }
             if (axieInfo.brake)
             {
@@ -95,15 +117,37 @@ public class CarController : MonoBehaviour
         }
         RWheel.brakeTorque = brakeInput * brakePower *  0.7f;
         Lwheel.brakeTorque = brakeInput * brakePower * 0.7f;
-
-
-        
-
     }
 
-    private void CalculateSpeed()
+    private float CalculateTorque(float motorInput, WheelCollider RWheel, WheelCollider Lwheel)
+    {
+        float torque = 0;
+        //Aca comienza con una variable de isEngineRuning que tiene que ver con el sonido del motor, cuando tenga sonido agregarlo
+        if(clutch < 0.1f)
+        {
+            RPM = Mathf.Lerp(RPM, Mathf.Max(idleRPM, redLine * motorInput) + Random.Range(-50, 50), Time.deltaTime);
+        }
+        else
+        {
+            wheelRPM = Mathf.Abs((RWheel.rpm + Lwheel.rpm) / 2f) * gearRatios[currentGear] * diferentialRatio;
+            RPM = Mathf.Lerp(RPM, Mathf.Max(idleRPM - 100, wheelRPM), Time.deltaTime * 3f);
+            torque = (hpToRPMCurve.Evaluate(RPM / redLine)* motorPower/RPM) * gearRatios[currentGear] * diferentialRatio * 5252f * clutch;
+        }
+
+        return torque;
+    }
+
+    private void CalculateSpeedAndRPM()
     {
         speed = Mathf.Round(carRB.velocity.magnitude * 3.6f);
         speedometerText.SetText(speed + " km/h");
+        //Acá va a ir el movimiento de la aguja del velocimetro de RPM que todavia no esta
+        // rpmNeedle.rotation = Quaternion.Euler(0,0, Mathf.Lerp(minNeedleRotation, maxNeedleRotation, RPM / redLine);
+
+        gearText.SetText((currentGear + 1).ToString());
+        rpmText.SetText((RPM).ToString("0,000") + "rpm");
+
+
+
     }
 }
