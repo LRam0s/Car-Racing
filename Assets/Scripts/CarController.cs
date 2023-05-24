@@ -3,6 +3,15 @@ using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 
+
+[SerializeField]
+enum GearState
+{
+    Neutral,
+    Running,
+    CheckingChange,
+    Changing
+};
 public class CarController : MonoBehaviour
 {
     [System.Serializable]
@@ -43,12 +52,18 @@ public class CarController : MonoBehaviour
     [SerializeField] float clutch;
     [SerializeField] float wheelRPM;
     [SerializeField] AnimationCurve hpToRPMCurve;
+    private GearState gearState;
+    [SerializeField] float increaseGearRPM;
+    [SerializeField] float decreaseGearRPM;
+    [SerializeField] float changeGearTime = 0.5f;
+
 
 
     private void Start()
     {
         carRB = GetComponent<Rigidbody>();
         carRB.centerOfMass = cOM;
+        gearState = GearState.Running;
     }
 
     public void FixedUpdate()
@@ -76,7 +91,27 @@ public class CarController : MonoBehaviour
     {
         float motorInput = Input.GetAxis("Vertical");
         float steeringInput = Input.GetAxis("Horizontal");
-        clutch = Input.GetKey(KeyCode.LeftShift) ? 0 : Mathf.Lerp(clutch, 1, Time.deltaTime);
+
+
+        if(gearState != GearState.Changing)
+        {
+            if(gearState == GearState.Neutral)
+            {
+                clutch = 0;
+                if (Mathf.Abs(motorInput) > 0)
+                {
+                    gearState = GearState.Running;
+                }
+            }
+            else
+            {
+                clutch = Input.GetKey(KeyCode.LeftShift) ? 0 : Mathf.Lerp(clutch, 1, Time.deltaTime);
+            }
+        }
+         else
+        {
+            clutch = 0;
+        }
         
         float steering = maxSteeringAngle * steeringInput;
         
@@ -92,6 +127,7 @@ public class CarController : MonoBehaviour
                 currentTorque = CalculateTorque(motorInput, axieInfo.rigthWheel, axieInfo.leftWheel);
                 axieInfo.leftWheel.motorTorque = currentTorque * motorInput;
                 axieInfo.rigthWheel.motorTorque = currentTorque * motorInput;
+
             }
             if (axieInfo.brake)
             {
@@ -122,8 +158,11 @@ public class CarController : MonoBehaviour
     private float CalculateTorque(float motorInput, WheelCollider RWheel, WheelCollider Lwheel)
     {
         float torque = 0;
+        AutomaticGear(motorInput);
+        //ManualGear(motorInput);
+
         //Aca comienza con una variable de isEngineRuning que tiene que ver con el sonido del motor, cuando tenga sonido agregarlo
-        if(clutch < 0.1f)
+        if (clutch < 0.1f)
         {
             RPM = Mathf.Lerp(RPM, Mathf.Max(idleRPM, redLine * motorInput) + Random.Range(-50, 50), Time.deltaTime);
         }
@@ -137,6 +176,37 @@ public class CarController : MonoBehaviour
         return torque;
     }
 
+    IEnumerator ChangeGear(int gearChange)
+    {
+        gearState = GearState.CheckingChange;
+        if(currentGear + gearState >= 0)
+        {
+            if(gearChange > 0)
+            {
+                yield return new WaitForSeconds(0.7f);
+                if(RPM < increaseGearRPM || currentGear >= gearRatios.Length - 1)
+                {
+                    gearState = GearState.Running;
+                    yield break;
+                }
+            }
+            if(gearChange < 0)
+            {
+                yield return new WaitForSeconds(0.1f);
+                if(RPM > decreaseGearRPM || currentGear <= 0)
+                {
+                    gearState = GearState.Running;
+                    yield break;
+                }
+            }
+            gearState = GearState.Changing;
+            yield return new WaitForSeconds(changeGearTime);
+            currentGear += gearChange;
+        }
+        gearState = GearState.Running;
+
+    }
+
     private void CalculateSpeedAndRPM()
     {
         speed = Mathf.Round(carRB.velocity.magnitude * 3.6f);
@@ -144,10 +214,46 @@ public class CarController : MonoBehaviour
         //Acá va a ir el movimiento de la aguja del velocimetro de RPM que todavia no esta
         // rpmNeedle.rotation = Quaternion.Euler(0,0, Mathf.Lerp(minNeedleRotation, maxNeedleRotation, RPM / redLine);
 
-        gearText.SetText((currentGear + 1).ToString());
+        gearText.SetText((gearState == GearState.Neutral) ? "N" : (currentGear + 1).ToString());
         rpmText.SetText((RPM).ToString("0,000") + "rpm");
 
-
-
     }
+
+    private void AutomaticGear(float motorInput)
+    {
+        if (RPM < idleRPM + 100 && motorInput == 0 && currentGear == 0)
+        {
+            gearState = GearState.Neutral;
+        }
+        if (gearState == GearState.Running && clutch > 0)
+        {
+            if (RPM > increaseGearRPM)
+            {
+                StartCoroutine(ChangeGear(1));
+            }
+            else if (RPM < decreaseGearRPM)
+            {
+                StartCoroutine(ChangeGear(-1));
+            }
+        }
+    }
+    
+    //Caja de cambios manual, cuando haga el UI en donde elija que tipo de transmision quiere la agrego y la optimizo
+    private void ManualGear(float motorInput)
+    {
+        if (RPM < idleRPM + 100 && motorInput == 0 && currentGear == 0)
+        {
+            gearState = GearState.Neutral;
+        }
+        if (Input.GetKeyDown(KeyCode.E) && currentGear < 6)
+        {
+            StartCoroutine(ChangeGear(1));
+        }
+        if (Input.GetKeyDown(KeyCode.Q) && currentGear >= 1)
+        {
+            StartCoroutine(ChangeGear(-1));
+
+        }
+    }
+
 }
