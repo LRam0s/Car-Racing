@@ -25,6 +25,7 @@ public class CarController : MonoBehaviour
     }
 
     [SerializeField] List<AxieInfo> axieInfos;
+    [SerializeField] AxieInfo colliders;
     [SerializeField] float motorPower;
     [SerializeField] float maxSteeringAngle;
     private Rigidbody carRB;
@@ -32,6 +33,11 @@ public class CarController : MonoBehaviour
     [SerializeField] float brakePower;
     [SerializeField] float brakeInput;
     [SerializeField] float speed;
+    [SerializeField] float speedForSound;
+    [SerializeField] float speedForSoundClamped;
+
+    public float motorInput;
+
 
     [SerializeField] TextMeshProUGUI speedometerText;
 
@@ -68,7 +74,8 @@ public class CarController : MonoBehaviour
 
     public void FixedUpdate()
     {
-        
+        speedForSound = colliders.rigthWheel.rpm * colliders.rigthWheel.radius * 2f * Mathf.PI / 10f;
+        speedForSoundClamped = Mathf.Lerp(speedForSoundClamped, speedForSound, Time.deltaTime);
         CarConduction();
         CalculateSpeedAndRPM();
     }
@@ -89,7 +96,7 @@ public class CarController : MonoBehaviour
 
     private void CarConduction()
     {
-        float motorInput = Input.GetAxis("Vertical");
+        motorInput = Input.GetAxis("Vertical");
         float steeringInput = Input.GetAxis("Horizontal");
 
 
@@ -161,7 +168,7 @@ public class CarController : MonoBehaviour
         AutomaticGear(motorInput);
         //ManualGear(motorInput);
 
-        //Aca comienza con una variable de isEngineRuning que tiene que ver con el sonido del motor, cuando tenga sonido agregarlo
+        
         if (clutch < 0.1f)
         {
             RPM = Mathf.Lerp(RPM, Mathf.Max(idleRPM, redLine * motorInput) + Random.Range(-50, 50), Time.deltaTime);
@@ -254,6 +261,12 @@ public class CarController : MonoBehaviour
             StartCoroutine(ChangeGear(-1));
 
         }
+    }
+
+    public float GetSpeedRatio(float motorInput)
+    {
+        var gas = Mathf.Clamp(Mathf.Abs(motorInput), 0.5f, 1f);
+        return RPM * gas / redLine;
     }
 
 }
