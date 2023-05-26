@@ -24,8 +24,22 @@ public class CarController : MonoBehaviour
         public bool brake;
     }
 
+    [System.Serializable]
+    public class WheelTrail
+    {
+        public WheelCollider RTWheel;
+        public WheelCollider LTWheel;
+        public WheelCollider RBWheel;
+        public WheelCollider LBWheel;
+        public TrailRenderer RTWheelTrail;
+        public TrailRenderer LTWheelTrail;
+        public TrailRenderer RBWheelTrail;
+        public TrailRenderer LBWheelTrail;
+
+    }
+
     [SerializeField] List<AxieInfo> axieInfos;
-    [SerializeField] AxieInfo colliders;
+    [SerializeField] WheelTrail colliders;
     [SerializeField] float motorPower;
     [SerializeField] float maxSteeringAngle;
     private Rigidbody carRB;
@@ -63,6 +77,14 @@ public class CarController : MonoBehaviour
     [SerializeField] float decreaseGearRPM;
     [SerializeField] float changeGearTime = 0.5f;
 
+    [SerializeField] GameObject tireTrail;
+    [SerializeField] WheelTrail wheelTrail;
+    private BrakeLigth[] brakeLigth;
+
+
+
+
+
 
 
     private void Start()
@@ -70,14 +92,17 @@ public class CarController : MonoBehaviour
         carRB = GetComponent<Rigidbody>();
         carRB.centerOfMass = cOM;
         gearState = GearState.Running;
+        brakeLigth = transform.GetChild(4).GetComponentsInChildren<BrakeLigth>();
+        InitiateTrail();
     }
 
     public void FixedUpdate()
     {
-        speedForSound = colliders.rigthWheel.rpm * colliders.rigthWheel.radius * 2f * Mathf.PI / 10f;
+        speedForSound = colliders.RBWheel.rpm * colliders.RBWheel.radius * 2f * Mathf.PI / 10f;
         speedForSoundClamped = Mathf.Lerp(speedForSoundClamped, speedForSound, Time.deltaTime);
         CarConduction();
         CalculateSpeedAndRPM();
+        CheckParticles();
     }
 
     void WheelPosition(WheelCollider collider)
@@ -147,6 +172,17 @@ public class CarController : MonoBehaviour
         }
     }
 
+    private void InitiateTrail()
+    {
+        if (tireTrail)
+        {
+            wheelTrail.RTWheelTrail = Instantiate(tireTrail, colliders.RTWheel.transform.position - Vector3.up * colliders.RTWheel.radius, Quaternion.identity, colliders.RTWheel.transform).GetComponent<TrailRenderer>();
+            wheelTrail.LTWheelTrail = Instantiate(tireTrail, colliders.LTWheel.transform.position - Vector3.up * colliders.LTWheel.radius, Quaternion.identity, colliders.LTWheel.transform).GetComponent<TrailRenderer>();
+            wheelTrail.RBWheelTrail = Instantiate(tireTrail, colliders.RBWheel.transform.position - Vector3.up * colliders.RBWheel.radius, Quaternion.identity, colliders.RBWheel.transform).GetComponent<TrailRenderer>();
+            wheelTrail.LBWheelTrail = Instantiate(tireTrail, colliders.LBWheel.transform.position - Vector3.up * colliders.LBWheel.radius, Quaternion.identity, colliders.LBWheel.transform).GetComponent<TrailRenderer>();
+
+        }
+    }
     private void BrakesSystem(WheelCollider RWheel, WheelCollider Lwheel)
     {
         if (Input.GetKey(KeyCode.Space))
@@ -160,6 +196,13 @@ public class CarController : MonoBehaviour
         }
         RWheel.brakeTorque = brakeInput * brakePower *  0.7f;
         Lwheel.brakeTorque = brakeInput * brakePower * 0.7f;
+
+        foreach(BrakeLigth brLigth in brakeLigth)
+        {
+
+            brLigth.BrakeLigthOn(brakeInput);
+        }
+
     }
 
     private float CalculateTorque(float motorInput, WheelCollider RWheel, WheelCollider Lwheel)
@@ -267,6 +310,54 @@ public class CarController : MonoBehaviour
     {
         var gas = Mathf.Clamp(Mathf.Abs(motorInput), 0.5f, 1f);
         return RPM * gas / redLine;
+    }
+
+    private void CheckParticles()
+    {
+        WheelHit[] wheelHits = new WheelHit[4];
+        colliders.RTWheel.GetGroundHit(out wheelHits[0]);
+        colliders.LTWheel.GetGroundHit(out wheelHits[1]);
+        colliders.RBWheel.GetGroundHit(out wheelHits[2]);
+        colliders.LBWheel.GetGroundHit(out wheelHits[3]);
+
+        float slipAllowance = 1f;
+
+        if ((Mathf.Abs(wheelHits[0].sidewaysSlip) + Mathf.Abs(wheelHits[0].forwardSlip) > slipAllowance))
+        {
+            wheelTrail.RTWheelTrail.emitting = true;
+        }
+        else
+        {
+            wheelTrail.RTWheelTrail.emitting = false;
+        }
+
+        if ((Mathf.Abs(wheelHits[1].sidewaysSlip) + Mathf.Abs(wheelHits[1].forwardSlip) > slipAllowance))
+        {
+            wheelTrail.LTWheelTrail.emitting = true;
+        }
+        else
+        {
+            wheelTrail.LTWheelTrail.emitting = false;
+        }
+
+        if ((Mathf.Abs(wheelHits[2].sidewaysSlip) + Mathf.Abs(wheelHits[2].forwardSlip) > slipAllowance))
+        {
+            wheelTrail.RBWheelTrail.emitting = true;
+        }
+        else
+        {
+            wheelTrail.RBWheelTrail.emitting = false;
+        }
+
+        if ((Mathf.Abs(wheelHits[3].sidewaysSlip) + Mathf.Abs(wheelHits[3].forwardSlip) > slipAllowance))
+        {
+            wheelTrail.LBWheelTrail.emitting = true;
+        }
+        else
+        {
+            wheelTrail.LBWheelTrail.emitting = false;
+        }
+
     }
 
 }
