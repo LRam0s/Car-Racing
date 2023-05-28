@@ -82,6 +82,20 @@ public class CarController : MonoBehaviour
     private BrakeLigth[] brakeLigth;
 
 
+    [SerializeField] float lapTime;
+    [SerializeField] TextMeshProUGUI lapTimeText;
+    [SerializeField] bool timeStart = false;
+    [SerializeField] bool checkpoint1 = false;
+    [SerializeField] bool checkpoint2 = false;
+    [SerializeField] float finishLapTime;
+    [SerializeField] TextMeshProUGUI bestTime;
+    [SerializeField] float bestLapTime;
+    [SerializeField] bool restartLap = false;
+
+
+
+
+
 
 
 
@@ -103,6 +117,8 @@ public class CarController : MonoBehaviour
         CarConduction();
         CalculateSpeedAndRPM();
         CheckParticles();
+        ApplyLapTimer();
+        
     }
 
     void WheelPosition(WheelCollider collider)
@@ -188,11 +204,12 @@ public class CarController : MonoBehaviour
         if (Input.GetKey(KeyCode.Space))
         {
             brakeInput = 1;
-            
 
-        } else
+        }
+        else
         {
             brakeInput = 0;
+
         }
         RWheel.brakeTorque = brakeInput * brakePower *  0.7f;
         Lwheel.brakeTorque = brakeInput * brakePower * 0.7f;
@@ -360,6 +377,68 @@ public class CarController : MonoBehaviour
         {
             wheelTrail.LBWheelTrail.emitting = false;
         }
+
+    }
+
+    private void ApplyLapTimer()
+    {
+        if (timeStart)
+        {
+
+            lapTime += Time.deltaTime;
+            lapTimeText.SetText("Lap Time: " + FormatTime(lapTime));
+        }
+
+        if (restartLap)
+        {
+            lapTime = 0;
+            timeStart = true;
+            checkpoint1 = false;
+            checkpoint2 = false;
+            restartLap = false;
+        }
+    }
+
+    private string FormatTime(float timeInSeconds)
+    {
+        
+        int minutes = Mathf.FloorToInt((timeInSeconds % 3600) / 60);
+        int seconds = Mathf.FloorToInt(timeInSeconds % 60);
+        int miliseconds = Mathf.FloorToInt((timeInSeconds * 1000) % 1000);
+
+
+        string timeText = string.Format("{0:00}:{1:00}.{2:000}", minutes, seconds, miliseconds);
+        return timeText;
+    }
+
+    private void OnTriggerEnter(Collider other)
+    {
+        if(other.gameObject.name == "StartFinishLine")
+        {
+            if(checkpoint1 == true && checkpoint2 == true)
+            {
+                timeStart = false;
+                finishLapTime = lapTime;
+                if(timeStart == false && finishLapTime < bestLapTime)
+                {
+                    bestLapTime = finishLapTime;
+                    bestTime.SetText("Best Time: " + FormatTime(finishLapTime));
+                }
+                restartLap = true;
+            }
+            else
+            {
+
+            timeStart = true;
+            checkpoint1 = false;
+            checkpoint2 = false;
+            }
+        }
+         checkpoint1 = (other.gameObject.name == "Checkpoint1") || checkpoint1;
+         checkpoint2 = (other.gameObject.name == "Checkpoint2") || checkpoint2;
+
+
+        
 
     }
 

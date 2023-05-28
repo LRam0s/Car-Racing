@@ -7,6 +7,7 @@ public class BrakeLigth : MonoBehaviour
     public Material brakeMaterial;
     public Color brakingColor;
     public float brakeColorIntense;
+    
 
     // Start is called before the first frame update
     void Start()
@@ -27,6 +28,7 @@ public class BrakeLigth : MonoBehaviour
 
             if (brakeInput > 0)
             {
+                
                 brakeMaterial.EnableKeyword("_EMISSION");
                 brakeMaterial.SetColor("_EmissionColor", brakingColor);
             }
@@ -34,6 +36,7 @@ public class BrakeLigth : MonoBehaviour
             {
                 brakeMaterial.DisableKeyword("_EMISSION");
                 brakeMaterial.SetColor("_EmissionColor", Color.black);
+                
             }
         }
     }

@@ -9,6 +9,8 @@ public class EngineAudio : MonoBehaviour
     [SerializeField] float runningMaxPitch;
     [SerializeField] AudioSource idleSound;
     [SerializeField] float idleMaxVolume;
+    [SerializeField] AudioSource brakeSound;
+
 
 
     private CarController carController;
@@ -18,11 +20,14 @@ public class EngineAudio : MonoBehaviour
     {
         carController = GetComponent<CarController>();
         motorInput = carController.motorInput;
+        
+        
     }
 
     // Update is called once per frame
     void Update()
     {
+        //Debug.Log(isBraking);
         if (carController)
         {
             speedRatio = carController.GetSpeedRatio(motorInput);
