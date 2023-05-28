@@ -61,9 +61,9 @@ public class CarController : MonoBehaviour
     [SerializeField] float idleRPM;
     [SerializeField] TextMeshProUGUI rpmText;
     [SerializeField] TextMeshProUGUI gearText;
-    // [SerializeField] Transform rpmNeedle;
-    // [SerializeField] float minNeedleRotation; //Una vez que arme el velocimetro, ver en la rotacion donde empieza y donde termina, y ahi configurar estos valores
-    // [SerializeField] float maxNeedleRotation;
+    [SerializeField] Transform speedNeedle;
+    [SerializeField] float minNeedleRotation; 
+    [SerializeField] float maxNeedleRotation;
     [SerializeField] int currentGear;
 
     [SerializeField] float[] gearRatios;
@@ -261,8 +261,11 @@ public class CarController : MonoBehaviour
     {
         speed = Mathf.Round(carRB.velocity.magnitude * 3.6f);
         speedometerText.SetText(speed + " km/h");
-        //Acá va a ir el movimiento de la aguja del velocimetro de RPM que todavia no esta
-        // rpmNeedle.rotation = Quaternion.Euler(0,0, Mathf.Lerp(minNeedleRotation, maxNeedleRotation, RPM / redLine);
+        float maxSpeed = 260f;
+       
+        speedNeedle.rotation = Quaternion.Euler(0,0, Mathf.Lerp(minNeedleRotation, maxNeedleRotation, speed / maxSpeed));
+       
+
 
         gearText.SetText((gearState == GearState.Neutral) ? "N" : (currentGear + 1).ToString());
         rpmText.SetText((RPM).ToString("0,000") + "rpm");
