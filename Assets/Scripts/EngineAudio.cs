@@ -10,6 +10,7 @@ public class EngineAudio : MonoBehaviour
     [SerializeField] AudioSource idleSound;
     [SerializeField] float idleMaxVolume;
     [SerializeField] AudioSource brakeSound;
+    
 
 
 
@@ -20,6 +21,7 @@ public class EngineAudio : MonoBehaviour
     {
         carController = GetComponent<CarController>();
         motorInput = carController.motorInput;
+       
         
         
     }
@@ -35,5 +37,6 @@ public class EngineAudio : MonoBehaviour
         idleSound.volume = Mathf.Lerp(0.1f, idleMaxVolume, speedRatio);
         runningSound.volume = Mathf.Lerp(0.3f, runningMaxVolume, speedRatio);
         runningSound.pitch = Mathf.Lerp(0.3f, runningMaxPitch, speedRatio);
+        
     }
 }

@@ -2,6 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
+using UnityEngine.UI;
+
 
 
 [SerializeField]
@@ -91,6 +93,23 @@ public class CarController : MonoBehaviour
     [SerializeField] TextMeshProUGUI bestTime;
     [SerializeField] float bestLapTime;
     [SerializeField] bool restartLap = false;
+    [SerializeField] TextMeshProUGUI lastLapTime;
+
+
+
+    //Pause menu
+
+    [SerializeField] GameObject pauseScreen;
+    [SerializeField] Button relocalization;
+    [SerializeField] Button continueGame;
+    [SerializeField] Button exitGame;
+    [SerializeField] GameObject idleSound;
+    [SerializeField] GameObject runingSound;
+
+
+    private bool isPause = false;
+    private Quaternion startRotation;
+    private Vector3 startVelocity;
 
 
 
@@ -108,6 +127,12 @@ public class CarController : MonoBehaviour
         gearState = GearState.Running;
         brakeLigth = transform.GetChild(4).GetComponentsInChildren<BrakeLigth>();
         InitiateTrail();
+        relocalization.onClick.AddListener(Relocalization);
+        continueGame.onClick.AddListener(LeavePause);
+        exitGame.onClick.AddListener(ExitGame);
+        startRotation = carRB.rotation;
+        startVelocity = carRB.velocity;
+
     }
 
     public void FixedUpdate()
@@ -118,6 +143,7 @@ public class CarController : MonoBehaviour
         CalculateSpeedAndRPM();
         CheckParticles();
         ApplyLapTimer();
+        ApplyPauseMenu();
         
     }
 
@@ -419,6 +445,9 @@ public class CarController : MonoBehaviour
             {
                 timeStart = false;
                 finishLapTime = lapTime;
+                lastLapTime.SetText("Last lap: " + FormatTime(finishLapTime));
+                lastLapTime.color = (finishLapTime < bestLapTime) ? Color.green : Color.red;
+
                 if(timeStart == false && finishLapTime < bestLapTime)
                 {
                     bestLapTime = finishLapTime;
@@ -437,9 +466,49 @@ public class CarController : MonoBehaviour
          checkpoint1 = (other.gameObject.name == "Checkpoint1") || checkpoint1;
          checkpoint2 = (other.gameObject.name == "Checkpoint2") || checkpoint2;
 
+    }
 
+    private void ApplyPauseMenu()
+    {
+        if (Input.GetKeyDown(KeyCode.P)){
+            isPause = !isPause;
+            if (isPause)
+            {
+                pauseScreen.SetActive(true);
+                Time.timeScale = 0;
+                idleSound.SetActive(false);
+                runingSound.SetActive(false);
+            } else if (isPause == false)
+            {
+                pauseScreen.SetActive(false);
+                idleSound.SetActive(true);
+                runingSound.SetActive(true);
+                Time.timeScale = 1;
+            }
+        }
+    }
+
+    private void Relocalization()
+    {
+        carRB.position = new Vector3(-1.65f, 1f, 3.48f);
+        carRB.rotation = startRotation;
+        carRB.velocity = startVelocity;
+        RPM = idleRPM;
         
+    }
 
+    private void LeavePause()
+    {
+        isPause = false;
+        pauseScreen.SetActive(false);
+        idleSound.SetActive(true);
+        runingSound.SetActive(true);
+        Time.timeScale = 1;
+    }
+
+    private void ExitGame()
+    {
+        Application.Quit();
     }
 
 }
